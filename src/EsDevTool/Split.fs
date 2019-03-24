@@ -1,4 +1,4 @@
-// https://hackage.haskell.org/package/split-0.1.1/docs/src/Data-List-Split-Internals.html
+// http://hackage.haskell.org/package/split-0.2.3.3/docs/src/Data-List-Split-Internals.html
 
 namespace CollectionSplitter
 
@@ -26,14 +26,14 @@ module Split =
 
     let matchDelimiter predicate a =
         match a with
-        | a when predicate a -> Delim a
-        | _ -> Value a
+        | a when predicate a -> Delim [a]
+        | _ -> Value [a]
 
     let splitInternal (f:DelimiterPredicate<'T>) a =
         List.map (matchDelimiter f) a
 
-    //let qwert = "qwert" |> Seq.toList |> splitInternal (fun c -> (c='e'))
-    //let qwert = "qeeet" |> Seq.toList |> splitInternal (fun c -> (c='e'))
+    //let qwert = "qwert" |> Seq.toList |> splitInternal (fun c -> (c='e'));;
+    //let qwert = "qeeet" |> Seq.toList |> splitInternal (fun c -> (c='e'));;
 
     // split :: Splitter a -> [a] -> [[a]]
     // split s = map fromElem . postProcess s . splitInternal (delimiter s)
@@ -45,7 +45,7 @@ module Split =
         | Condense
         | KeepDelimiters
 
-    let doCondense policy ss = 
+    let doCondense policy sl = 
 
         let rec condense splitlist prevChunk =
             match splitlist with
@@ -54,13 +54,32 @@ module Split =
             | _ -> []
 
         match policy with
-        | KeepDelimiters -> ss
+        | KeepDelimiters -> sl
         | Condense -> 
-            match ss with
+            match sl with
             | [] -> []
-            | x::xs -> condense ss x
+            | x::xs -> condense sl x
+
+    let rec insertBlanksRec sl =
+        match sl with
+        | [] -> []
+        | d1::d2::xs when isDelim d1 && isDelim d2 -> d1::Value []:: insertBlanksRec (d2::xs)
+        | d::xs when isDelim d -> d::Value []::insertBlanksRec (xs)
+        | x::xs -> x::insertBlanksRec xs
+
+    let insertBlanks sl =
+        match sl with
+        | [] -> [Value []]
+        | x::xs when isDelim x -> Value []::(insertBlanksRec (x::xs))
+        | sl -> insertBlanksRec sl
 
 
+    // let rec merge sl =
+    //     let sublist = []
+    //     match sl with
+    //     | x::xs when isValue x -> x::
+    //     | x::xs when isDelim x ->
+    //     | _ -> []
 
     // -- > splitWhen (<0) [1,3,-4,5,7,-9,0,2] == [[1,3],[5,7],[0,2]]
     // splitWhen :: (a -> Bool) -> [a] -> [[a]]
@@ -82,8 +101,4 @@ module Split =
     //               . doCondense (condensePolicy s)
     let postProcess splitter =
         splitter
-
-
-
-
-
+    

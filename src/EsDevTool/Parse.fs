@@ -26,11 +26,14 @@ let GetPathQuery (str:string) =
     | 2 -> Some(words.[1])
     | _ -> None
 
-let PartitionWhile f =
-    let rec loop acc = function
-      | x::xs when f x -> loop (x::acc) xs
-      | xs -> List.rev acc, xs
-    loop [] 
 
+let partitionOn pred sl= 
+  let merger pred list obj =
+    match list with
+    | [] -> [obj] :: list
+    | _ when pred obj -> []::list
+    | head::rest -> (obj::head)::rest
 
-let a = ["item1"; "item 2"; ""; " item3"; "          "; "item 4 "; "item5"] |> seq
+  List.fold (merger pred) [] sl |> 
+  List.map List.rev |> 
+  List.rev  
