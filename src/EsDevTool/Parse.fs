@@ -14,10 +14,10 @@ let EnsureStartsWithSlash (str:string) =
 let GetHttpMethod (str:string) =
     let s = str.Trim().ToUpper()
     match s with
-    | s when s.StartsWith("GET") -> Some("GET")
-    | s when s.StartsWith("POST") -> Some("POST")
-    | s when s.StartsWith("PUT") -> Some("PUT")
-    | s when s.StartsWith("DELETE") -> Some("DELETE")
+    | s when s.StartsWith("GET ") -> Some("GET")
+    | s when s.StartsWith("POST ") -> Some("POST")
+    | s when s.StartsWith("PUT ") -> Some("PUT")
+    | s when s.StartsWith("DELETE ") -> Some("DELETE")
     | _ -> None
 
 let GetPathQuery (str:string) = 
