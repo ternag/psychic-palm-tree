@@ -3,7 +3,7 @@ module ParseTest
 open System
 open Xunit
 open FsUnit.Xunit
-open Parse
+open Elastic
 
 [<Theory>]
 [<InlineData("_search")>]
@@ -14,7 +14,6 @@ let ``EnsureStartsWithSlash works`` (input) =
 [<Theory>]
 [<InlineData("GET _search", "GET")>]
 [<InlineData(" POST /_search", "POST")>]
-[<InlineData("GET _search", "GET")>]
 [<InlineData("get _search", "GET")>]
 [<InlineData("POST _search", "POST")>]
 [<InlineData("post _search", "POST")>]
@@ -24,7 +23,7 @@ let ``EnsureStartsWithSlash works`` (input) =
 [<InlineData("PUT _search", "PUT")>]
 [<InlineData("       PUT jsdfhglkjshdfg", "PUT")>]
 let ``GetHttpMethod gets the correct http method`` (input, expected) =
-    GetHttpMethod input |> should equal (Some expected)
+    toHttpMethod input |> should equal (Some expected)
 
 [<Theory>]
 [<InlineData(" FET _search")>]
@@ -33,24 +32,46 @@ let ``GetHttpMethod gets the correct http method`` (input, expected) =
 [<InlineData("   ")>]
 [<InlineData("PUTTY")>]
 let ``GetHttpMethod returns none when no http method is present`` (input) =
-    GetHttpMethod input |> should equal None
+    toHttpMethod input |> should equal None
 
 [<Theory>]
 [<InlineData("  GET _search   ", "_search")>]
 [<InlineData(" POST /_search ", "/_search")>]
 [<InlineData("GET /st-msg/messagesearchdto/_search?typed_keys=true", "/st-msg/messagesearchdto/_search?typed_keys=true")>]
 let ``GetPathQuery gets the correct path/query`` (input, expected) =
-    GetPathQuery input |> should equal (Some expected)
+    toPathQuery input |> should equal (Some expected)
 
 [<Theory>]
 [<InlineData("POST/_search")>]
 [<InlineData("")>]
 let ``GetPathQuery returns None when no second word is present`` (input) =
-    GetPathQuery input |> should equal None
+    toPathQuery input |> should equal None
 
 [<Fact>]
 let ``Partition a list`` () =
     let input = ["item1"; "item 2"; ""; " item3"; "          "; "item 4 "; "item5"]
     let expected = [["item1"; "item 2"]; [" item3"]; ["item 4 "; "item5"]]
-    let actual =  partitionOn (String.IsNullOrWhiteSpace) input
+    let actual =  PartitionOn (String.IsNullOrWhiteSpace) input
     Assert.Equal<Collections.Generic.IEnumerable<string list>>(expected, actual)
+
+[<Fact>]
+let ``Partition an empty list yields an empty list`` () =
+    let input = []
+    let expected = []
+    let actual =  PartitionOn (String.IsNullOrWhiteSpace) input
+    Assert.Equal<Collections.Generic.IEnumerable<string list>>(expected, actual)
+
+[<Fact>]
+let ``Partition a list without delimiters yields a list with one list element`` () =
+    let input = ["item1"; "item 2"; "item3";]
+    let expected = [["item1"; "item 2"; "item3";]]
+    let actual =  PartitionOn (String.IsNullOrWhiteSpace) input
+    Assert.Equal<Collections.Generic.IEnumerable<string list>>(expected, actual)
+
+[<Fact>]
+let ``Partition a list with only delimiters yields an empty list`` () =
+    let input = [null; ""; "\n"; "   \n"; "\t\n"; "    ";]
+    let expected = []
+    let actual =  PartitionOn (String.IsNullOrWhiteSpace) input
+    Assert.Equal<Collections.Generic.IEnumerable<string list>>(expected, actual)
+
