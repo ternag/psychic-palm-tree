@@ -32,9 +32,8 @@ let toHttpMethod (str:string) =
 let toPathQuery (str:string) = 
     let words = str.Trim().Split(' ')
     match words.Length with
-    | 2 -> Ok (Path words.[1])
+    | 2 -> Ok (Path (EnsureStartsWithSlash words.[1]))
     | _ -> Error (sprintf "Path not found in '%s'. Expected format is '<http-method> <path>?<query>'" str)
-
 
 let PartitionOn pred sl= 
 

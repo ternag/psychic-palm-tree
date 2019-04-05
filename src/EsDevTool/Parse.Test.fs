@@ -4,6 +4,8 @@ open System
 open Xunit
 open FsUnit.Xunit
 open Elastic
+open FSharp.Data
+open Swensen.Unquote
 
 [<Theory>]
 [<InlineData("_search")>]
@@ -22,8 +24,16 @@ let ``EnsureStartsWithSlash works`` (input) =
 [<InlineData("put _search", "PUT")>]
 [<InlineData("PUT _search", "PUT")>]
 [<InlineData("       PUT jsdfhglkjshdfg", "PUT")>]
-let ``GetHttpMethod gets the correct http method`` (input, expected) =
-    toHttpMethod input |> should equal (Some expected)
+let ``toHttpMethod gets the correct http method`` (input, expected) =
+    let expect = 
+        match expected with
+        | "GET" -> GET
+        | "POST" -> POST
+        | "DELETE" -> DELETE
+        | "PUT" -> PUT
+        
+    //toHttpMethod input |> should equal (Ok expect)
+    test <@ toHttpMethod input = Ok expect @>
 
 [<Theory>]
 [<InlineData(" FET _search")>]
@@ -31,21 +41,24 @@ let ``GetHttpMethod gets the correct http method`` (input, expected) =
 [<InlineData("")>]
 [<InlineData("   ")>]
 [<InlineData("PUTTY")>]
-let ``GetHttpMethod returns none when no http method is present`` (input) =
-    toHttpMethod input |> should equal None
+let ``toHttpMethod returns Error when no http method is present`` (input) =
+    //toHttpMethod input |> should equal Error
+    test <@ toHttpMethod input |> Result.isError @>
 
 [<Theory>]
-[<InlineData("  GET _search   ", "_search")>]
+[<InlineData("  GET _search   ", "/_search")>]
 [<InlineData(" POST /_search ", "/_search")>]
 [<InlineData("GET /st-msg/messagesearchdto/_search?typed_keys=true", "/st-msg/messagesearchdto/_search?typed_keys=true")>]
-let ``GetPathQuery gets the correct path/query`` (input, expected) =
-    toPathQuery input |> should equal (Some expected)
+let ``toPathQuery gets the correct path/query`` (input, expected) =
+    //toPathQuery input |> should equal (Some expected)
+    test <@ toPathQuery input = Ok (Path expected) @>
 
 [<Theory>]
 [<InlineData("POST/_search")>]
 [<InlineData("")>]
-let ``GetPathQuery returns None when no second word is present`` (input) =
-    toPathQuery input |> should equal None
+let ``toPathQuery returns Error when no second word is present`` (input) =
+    //toPathQuery input |> should equal None
+    test <@ toPathQuery input |> Result.isError @>
 
 [<Fact>]
 let ``Partition a list`` () =
@@ -74,4 +87,11 @@ let ``Partition a list with only delimiters yields an empty list`` () =
     let expected = []
     let actual =  PartitionOn (String.IsNullOrWhiteSpace) input
     Assert.Equal<Collections.Generic.IEnumerable<string list>>(expected, actual)
+
+[<Fact>]
+let ``ParseSection with valid input yields an ElasticRequest`` () =
+    let input = ["GET /_search"; "{"; "\"a\":12"; "}";]
+    let expected = {Method=GET; Path=Path("/_search"); Body= JsonValue.Parse "{\"a\":12}"}
+    let (Ok actual) =  ParseSection input
+    expected |> should equal actual
 
