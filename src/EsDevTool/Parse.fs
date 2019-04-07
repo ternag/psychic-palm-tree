@@ -2,12 +2,10 @@ module Elastic
 
 open System
 open FSharp.Data
-open System.Xml
-open System.IO
 
 type Method = GET|POST|PUT|DELETE
 type Path = Path of string
-type Body = JsonValue
+type Body = Json of JsonValue|Empty
 
 type ElasticRequest = {
   Method:Method
@@ -49,7 +47,9 @@ let PartitionOn pred sl=
   List.rev  
 
 let toBody str =
-  JsonValue.Parse str
+  match str with
+  | str when String.IsNullOrWhiteSpace str -> Empty
+  | str -> Json (JsonValue.Parse str)
 
 let ParseSection sl =
   
@@ -64,8 +64,11 @@ let ParseSection sl =
   | head::rest -> 
     let tmp = validate head rest
     match tmp with
-    | (Ok a, Ok b, c) -> Ok ({Method = a; Path = b; Body = c })
+    | (Ok a, Ok b, Json c) -> Ok ({Method = a; Path = b; Body = Json c })
+    | (Ok a, Ok b, _) -> Ok ({Method = a; Path = b; Body = Empty })
     | (Error a, _, _) -> Error a
     | (_, Error b, _) -> Error b
 
 
+let ParseFile sl =
+  PartitionOn (String.IsNullOrWhiteSpace) sl |> List.map ParseSection
