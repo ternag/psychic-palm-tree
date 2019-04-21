@@ -70,5 +70,5 @@ let ParseSection sl =
     | (_, Error b, _) -> Error b
 
 
-let ParseFile sl =
+let Parse sl =
   PartitionOn (String.IsNullOrWhiteSpace) sl |> List.map ParseSection
